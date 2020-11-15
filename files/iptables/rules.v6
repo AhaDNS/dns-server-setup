@@ -1,0 +1,58 @@
+# AhaDNS ip6table rules
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+
+# DROP all ANY queries
+-A INPUT -p udp --dport 53 -m string --hex-string "|0000FF0001|" --algo bm --from 40 -j DROP
+-A INPUT -p tcp --dport 53 -m string --hex-string "|0000FF0001|" --algo bm --from 52 -j DROP
+
+# Block agains floods from queries for isc.org
+-A INPUT -p udp -m string --hex-string "|00000000000103697363036f726700|" --algo bm --to 65535 --dport 53 -j DROP
+-A INPUT -p tcp -m string --hex-string "|00000000000103697363036f726700|" --algo bm --to 65535 --dport 53 -j DROP
+# Protect against floods from queries for ripe.net
+-A INPUT -p udp -m string --hex-string "|0000000000010472697065036e6574|" --algo bm --to 65535 --dport 53 -j DROP
+-A INPUT -p tcp -m string --hex-string "|0000000000010472697065036e6574|" --algo bm --to 65535 --dport 53 -j DROP
+
+# Allow lo input
+-A INPUT -i lo -j ACCEPT
+
+# Rate limit
+-A INPUT -i {wanInterface} -d {Ipv6Addr} -p udp --dport 53 -m hashlimit --hashlimit-above 30/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsipv6 -j REJECT
+-A INPUT -i {wanInterface} -d {Ipv6Addr} -p tcp -m multiport --dports 80,443,53,853 -m hashlimit --hashlimit-above 30/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsipv6 -j REJECT
+
+# Open inputs
+-A INPUT -i {wanInterface} -d {Ipv6Addr} -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 53,80,443,853 -j ACCEPT
+-A INPUT -i {wanInterface} -d {Ipv6Addr} -p udp -m state --state NEW,ESTABLISHED -m udp --dport 53 -j ACCEPT
+
+-A INPUT -i {wanInterface} -p icmpv6 -j ACCEPT --match limit --limit 60/second
+
+# Log rejected connections (Debugging)
+-A INPUT --match limit --limit 1/sec -j LOG --log-prefix "IPTables-Rejected: "
+
+# Allow input of Established connections
+-A INPUT -i {wanInterface} -p tcp -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -i {wanInterface} -p udp -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Drop everything else
+-A INPUT -j DROP
+
+# Limit output to certain ports
+-A OUTPUT -o {wanInterface} -p tcp -m state --state NEW,ESTABLISHED,RELATED -m multiport --dports 53,80,443,587 -j ACCEPT
+-A OUTPUT -o {wanInterface} -p udp -m state --state NEW,ESTABLISHED,RELATED -m multiport --dports 53 -j ACCEPT
+-A OUTPUT -o {wanInterface} -p icmpv6 -j ACCEPT --match limit --limit 60/second
+
+# Allow output of Established connections
+-A OUTPUT -o {wanInterface} -p tcp -m state --state ESTABLISHED -j ACCEPT
+-A OUTPUT -o {wanInterface} -p udp -m state --state ESTABLISHED -j ACCEPT
+
+# Allow all local output
+-A OUTPUT -o lo -j ACCEPT
+
+# Drops
+-A OUTPUT -o {wanInterface} -j DROP
+-A OUTPUT -j DROP
+-A FORWARD -j DROP
+COMMIT
+# End

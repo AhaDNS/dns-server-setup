@@ -1,0 +1,8 @@
+# Update unbound black/white list every 4th hour
+3 */4 * * *   root /etc/ahadns/unbound_update.sh >/var/log/unbound-update.log || cat /var/log/unbound-update.log
+
+# Remove old logs 2 minutes after rotation
+2 0 * * * root /etc/ahadns/ahadns_log_purge.sh
+
+# Download root hints at 00:00 on Sunday in every 3rd month
+0 0 * */3 sun root /etc/ahadns/unbound_root_hints.sh >/var/log/root-hints.log || cat /var/log/root-hints.log

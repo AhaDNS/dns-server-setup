@@ -1,0 +1,74 @@
+map $remote_addr $remote_addr_anon {
+    ~(?P<ip>\d+\.\d+\.\d+)\.    $ip.0;
+    ~(?P<ip>[^:]+:[^:]+):       $ip::;
+    default                     0.0.0.0;
+}
+
+log_format anonymized '[$time_local] - from: $remote_addr_anon - $remote_user '
+   '"$request" status: $status bytes_sent: $body_bytes_sent '
+   '"$http_referer" "$http_user_agent"';
+
+limit_req_zone $binary_remote_addr zone=userip:32m rate=100r/s;
+
+upstream doh-endpoints {
+    server    127.0.0.1:8053;
+    server    [::1]:8053;
+}
+
+server {
+        server_name     {ServerName};
+
+        location / {
+                return 301 https://ahadns.com/dns-over-https/;
+        }
+
+        location /dns-query {
+                limit_req zone=userip burst=20 nodelay;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header Host $host;
+                proxy_pass http://doh-endpoints/dns-query;
+        }
+
+        # Logs
+        access_log  /var/log/nginx/doh.access.log anonymized;
+        error_log  /var/log/nginx/doh.error.log  warn;
+
+        # Custom SSL Settings
+        ssl_protocols TLSv1.2 TLSv1.3;          # TLS 1.3 requires nginx >= 1.13.0
+        ssl_session_tickets off;                # Requires nginx >= 1.5.9
+        ssl_stapling on;                        # Requires nginx >= 1.3.7
+        ssl_stapling_verify on;                 # Requires nginx => 1.3.7
+        ssl_session_cache shared:doh_nginx_SSL:128m;
+        ssl_session_timeout 60m;
+        
+        # Client can choose for TLS > 1.1
+        ssl_prefer_server_ciphers off;
+
+        ssl_ciphers "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512";
+
+        # HTTP Security Headers
+        add_header X-Frame-Options DENY;
+        add_header X-Content-Type-Options nosniff;
+        add_header X-XSS-Protection "1; mode=block";
+        add_header Strict-Transport-Security "max-age=63072000";
+
+        # Disable server tokens (server version and info)
+        server_tokens off;
+
+    listen [::]:443 http2 ssl reuseport;
+    listen 443 http2 ssl reuseport;
+    ssl_certificate /etc/letsencrypt/live/{ServerName}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{ServerName}/privkey.pem;
+    ssl_dhparam /etc/letsencrypt/aha-dhparams.pem;
+}
+server {
+    if ($host = {ServerName}) {
+        return 301 https://$host$request_uri;
+    }
+
+    server_name     {ServerName};
+    listen [::]:80;
+    listen 80;
+    return 404;
+}

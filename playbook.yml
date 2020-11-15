@@ -1,0 +1,575 @@
+#
+# Ansible playbook used to setup AhaDNS servers.
+# This file does (usually) not need to be modified.
+# Disclaimer:
+# -> I don't know any best practices when it comes to Ansible.
+# -> This file have been created on late nights, possibly (probably?) under the influence.
+# -> You're more than welcome to help me clean this up and improve the playbook!
+#
+- hosts: ahadns
+  become: true
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: true
+        upgrade: true
+
+    - name: Set system timezone to {{ timezone }}
+      timezone:
+        name: "{{ timezone }}"
+
+    - name: Disable stubbed resolvconf DNS
+      lineinfile:
+        path: /etc/systemd/resolved.conf
+        regexp: "DNSStubListener"
+        line: DNSStubListener=no
+        state: present
+
+    - name: Restart systemd-resolved to unbind port 53
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: systemd-resolved
+
+    - name: Set temporary nameserver to 1.1.1.1
+      lineinfile:
+        path: /etc/resolv.conf
+        regexp: "nameserver"
+        line: nameserver 1.1.1.1
+        state: present
+
+    - name: Install latest required packages
+      apt:
+        name: "{{ packages }}"
+        state: latest
+      vars:
+        packages:
+          - iptables
+          - iptables-persistent
+          - unbound
+          - nginx
+          - resolvconf
+          - openssl
+          - make
+          - unattended-upgrades
+          - apt-listchanges
+          - bsd-mailx
+      register: install_result
+
+    - name: Enable nginx
+      systemd:
+        name: nginx
+        enabled: yes
+
+    - name: Enable unbound
+      systemd:
+        name: unbound
+        enabled: yes
+
+    - name: install galaxy roles
+      command: ansible-galaxy install -r "{{ playbook_dir }}/requirements.yml"
+      delegate_to: localhost
+      become: false
+
+    #
+    # Secure SSH
+    #
+    # - name: Secure SSH config
+    #   include_role:
+    #     name: dev-sec.ssh-hardening
+    #   vars:
+    #     ssh_server_ports: ["{{ sshPort }}"]
+    #     ssh_x11_forwarding: false
+    #     ssh_permit_root_login: "{{ sshAllowRootLogin }}"
+    #     ssh_max_auth_retries: 5
+    #     ssh_server_password_login: "{{ sshAllowPasswordAuth }}"
+    #     ssh_allow_users: "{{ sshAllowUsers }}"
+    #   when: "{{ secureSSH }}"
+
+    #
+    # Optimize sysctl.conf
+    #
+    - name: Install custom sysctl.conf
+      copy:
+        src: sysctl.d/ahadns-sysctl.conf
+        dest: /etc/sysctl.d/ahadns-sysctl.conf
+        force: yes
+    - name: Reload sysctl
+      shell: sysctl -p /etc/sysctl.d/ahadns-sysctl.conf
+      become: true
+
+    #
+    # Configure automatic updates
+    #
+    - name: Configure automatic updates
+      block:
+        - name: Reconfigure unattended-upgrades
+          shell: dpkg-reconfigure -f noninteractive -plow unattended-upgrades
+        - name: Configure 20auto-upgrades
+          copy:
+            src: apt.conf.d/20auto-upgrades
+            dest: /etc/apt/apt.conf.d/20auto-upgrades
+            force: yes
+        - name: Set automatic reboot to true
+          lineinfile:
+            path: /etc/apt/apt.conf.d/50unattended-upgrades
+            regexp: "Unattended-Upgrade::Automatic-Reboot"
+            line: 'Unattended-Upgrade::Automatic-Reboot "true";'
+        - name: Set automatic reboot time to {{ automaticRebootTime }}
+          lineinfile:
+            path: /etc/apt/apt.conf.d/50unattended-upgrades
+            regexp: "Unattended-Upgrade::Automatic-Reboot-Time"
+            line: 'Unattended-Upgrade::Automatic-Reboot-Time "{{ automaticRebootTime }}";'
+        - name: Set notification mail to {{ email }}
+          lineinfile:
+            path: /etc/apt/apt.conf.d/50unattended-upgrades
+            regexp: "Unattended-Upgrade::Mail"
+            line: 'Unattended-Upgrade::Mail "{{ email }}";'
+        - name: Configure to only mail on error
+          lineinfile:
+            path: /etc/apt/apt.conf.d/50unattended-upgrades
+            regexp: "Unattended-Upgrade::MailReport"
+            line: 'Unattended-Upgrade::MailReport "only-on-error";'
+      when: "configureAutomaticUpdates | bool"
+
+    #
+    # IPTables setup
+    #
+    - name: Setup IPTables
+      block:
+        - name: Copy IPTables conf for IPv4
+          copy:
+            src: iptables/rules.v4
+            dest: /etc/iptables/rules.v4
+            force: yes
+
+        - name: Copy IPTables conf for IPv6
+          copy:
+            src: iptables/rules.v6
+            dest: /etc/iptables/rules.v6
+            force: yes
+
+        - name: Fix windows CR/LF line endings in rules.v4
+          replace:
+            path: /etc/iptables/rules.v4
+            regexp: "\r"
+            replace: ""
+
+        - name: Fix windows CR/LF line endings in rules.v6
+          replace:
+            path: /etc/iptables/rules.v6
+            regexp: "\r"
+            replace: ""
+
+        - name: Update IP Address in rules.v4
+          replace:
+            path: /etc/iptables/rules.v4
+            regexp: "{Ipv4Addr}"
+            replace: "{{ serverIpv4 }}"
+
+        - name: Update WAN interface in rules.v4 (to {{ ansible_default_ipv4.interface }})
+          replace:
+            path: /etc/iptables/rules.v4
+            regexp: "{wanInterface}"
+            replace: "{{ ansible_default_ipv4.interface }}"
+
+        - name: Open SSH port {{ sshPort }} in rules.v4
+          replace:
+            path: /etc/iptables/rules.v4
+            regexp: "{sshPort}"
+            replace: "{{ sshPort | string }}"
+
+        - name: Update IP Address in rules.v6
+          replace:
+            path: /etc/iptables/rules.v6
+            regexp: "{Ipv6Addr}"
+            replace: "{{ serverIpv6 }}"
+
+        - name: Update WAN interface in rules.v6 (to {{ ansible_default_ipv6.interface }})
+          replace:
+            path: /etc/iptables/rules.v6
+            regexp: "{wanInterface}"
+            replace: "{{ ansible_default_ipv6.interface }}"
+
+        #
+        # There's a known issue here where
+        # the playbook 'hangs' when restoring IPTable rules.
+        # This should be investigated and fixed!
+        #
+        - name: iptables restore v4
+          shell: iptables-restore < /etc/iptables/rules.v4
+          become: true
+          register: reload_ipv4
+          until: reload_ipv4.rc == 0
+          retries: 10
+          delay: 1
+          ignore_errors: yes
+
+        - name: iptables restore v6
+          shell: ip6tables-restore < /etc/iptables/rules.v6
+          become: true
+          register: reload_ipv4
+          until: reload_ipv4.rc == 0
+          retries: 10
+          delay: 1
+          ignore_errors: yes
+
+    #
+    # Unbound setup
+    #
+    - name: Make sure that *.conf files are included in unbound.conf
+      lineinfile:
+        path: /etc/unbound/unbound.conf
+        state: present
+        regexp: '^include:.\*\.conf\"$'
+        line: 'include: "/etc/unbound/unbound.conf.d/*.conf"'
+
+    - name: Copy custom unbound.conf
+      copy:
+        src: unbound/ahadns.conf
+        dest: /etc/unbound/unbound.conf.d/ahadns.conf
+        force: yes
+
+    - name: Download DNS root hints
+      get_url:
+        url: https://www.internic.net/domain/named.root
+        dest: /var/lib/unbound/root.hints
+        mode: "0644"
+        force: yes
+
+    - name: Touch /etc/unbound/unbound_blocklist.conf
+      file:
+        path: /etc/unbound/unbound_blocklist.conf
+        state: touch
+        mode: "0644"
+
+    - name: Touch /etc/unbound/unbound_whitelist.conf
+      file:
+        path: /etc/unbound/unbound_whitelist.conf
+        state: touch
+        mode: "0644"
+
+    - name: Restart unbound
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: unbound
+
+    - name: Update local resolver to 127.0.0.1
+      copy:
+        content: nameserver 127.0.0.1
+        dest: /etc/resolvconf/resolv.conf.d/original
+        force: yes
+
+    - name: Update /etc/resolv.conf
+      shell: resolvconf -u
+
+    #
+    # Setup local scripts
+    #
+    - name: Copy unbound_update.sh
+      copy:
+        src: scripts/bash/unbound_update.sh
+        dest: /etc/ahadns/
+        mode: "0744"
+        force: yes
+
+    - name: Copy unbound_root_hints.sh
+      copy:
+        src: scripts/bash/unbound_root_hints.sh
+        dest: /etc/ahadns/
+        mode: "0744"
+        force: yes
+
+    - name: Copy ahadns_log_purge.sh
+      copy:
+        src: scripts/bash/ahadns_log_purge.sh
+        dest: /etc/ahadns/
+        mode: "0744"
+        force: yes
+
+    - name: Setup custom cron-jobs
+      copy:
+        src: cron.d/ahadns-cron
+        dest: /etc/cron.d/ahadns-cron
+        mode: "0644"
+        force: yes
+
+    #
+    # Execute local scripts to verify functionality
+    #
+    - name: Execute unbound_update.sh
+      shell: /etc/ahadns/unbound_update.sh
+    - name: Execute ahadns_log_purge.sh
+      shell: /etc/ahadns/ahadns_log_purge.sh
+    - name: Execute unbound_root_hints.sh
+      shell: /etc/ahadns/unbound_root_hints.sh
+
+    #
+    # Nginx setup
+    #
+    - name: Configure Nginx
+      block:
+        - name: Configure Nginx stapling
+          copy:
+            src: nginx/conf.d/stapling.conf
+            dest: /etc/nginx/conf.d/stapling.conf
+            mode: "0644"
+            force: yes
+        - name: Enable Nginx streams
+          lineinfile:
+            path: /etc/nginx/nginx.conf
+            insertafter: "include \/etc\/nginx\/modules-enabled"
+            line: "include /etc/nginx/streams-enabled/*;"
+            state: present
+        - name: "Create Nginx streams directory"
+          file:
+            path: /etc/nginx/streams-enabled
+            state: directory
+        - name: Secure Nginx TLS versions
+          lineinfile:
+            path: /etc/nginx/nginx.conf
+            regexp: "ssl_protocols "
+            line: ssl_protocols TLSv1.2 TLSv1.3;
+            state: present
+        - name: Configure Nginx to prefer server ciphers
+          lineinfile:
+            path: /etc/nginx/nginx.conf
+            regexp: "ssl_prefer_server_ciphers "
+            line: ssl_prefer_server_ciphers on;
+            state: present
+        - name: Configure default Nginx site
+          copy:
+            src: nginx/sites-available/default
+            dest: /etc/nginx/sites-available/default
+            mode: "0644"
+            force: yes
+        - name: Enable default site
+          file:
+            src: /etc/nginx/sites-available/default
+            dest: /etc/nginx/sites-enabled/default
+            state: link
+
+    # SSL certificates
+    - name: Check if SSL cert exist for {{ hostname }}
+      stat:
+        path: /etc/letsencrypt/live/{{ hostname }}/privkey.pem
+      register: web_ssl_exist
+
+    - name: Check if SSL cert exist for {{ dohEndpoint }}
+      stat:
+        path: /etc/letsencrypt/live/{{ dohEndpoint }}/privkey.pem
+      register: doh_ssl_exist
+
+    - name: Check if SSL cert exist for {{ dotEndpoint }}
+      stat:
+        path: /etc/letsencrypt/live/{{ dotEndpoint }}/privkey.pem
+      register: dot_ssl_exist
+
+    - name: Generating LetsEncrypt SSL for {{ hostname }}
+      include_role:
+        name: geerlingguy.certbot
+      vars:
+        certbot_create_if_missing: yes
+        certbot_create_method: standalone
+        certbot_admin_email: "{{ email }}"
+        certbot_auto_renew: true
+        certbot_auto_renew_hour: "3"
+        certbot_auto_renew_minute: "30"
+        certbot_certs:
+          - domains:
+              - "{{ hostname }}"
+        certbot_create_standalone_stop_services:
+          - nginx
+      when: not web_ssl_exist.stat.exists
+
+    - name: Generating LetsEncrypt SSL for {{ dohEndpoint }}
+      include_role:
+        name: geerlingguy.certbot
+      vars:
+        certbot_create_if_missing: yes
+        certbot_create_method: standalone
+        certbot_admin_email: "{{ email }}"
+        certbot_auto_renew: true
+        certbot_auto_renew_hour: "3"
+        certbot_auto_renew_minute: "40"
+        certbot_certs:
+          - domains:
+              - "{{ dohEndpoint }}"
+        certbot_create_standalone_stop_services:
+          - nginx
+      when: not doh_ssl_exist.stat.exists
+
+    - name: Generating LetsEncrypt SSL for {{ dotEndpoint }}
+      include_role:
+        name: geerlingguy.certbot
+      vars:
+        certbot_create_if_missing: yes
+        certbot_create_method: standalone
+        certbot_admin_email: "{{ email }}"
+        certbot_auto_renew: true
+        certbot_auto_renew_hour: "3"
+        certbot_auto_renew_minute: "50"
+        certbot_certs:
+          - domains:
+              - "{{ dotEndpoint }}"
+        certbot_create_standalone_stop_services:
+          - nginx
+      when: not dot_ssl_exist.stat.exists
+
+    # Hostname
+    - name: Copy Nginx config for {{ hostname }}
+      block:
+        - name: Configure site {{ hostname }}
+          copy:
+            src: nginx/sites-available/web
+            dest: /etc/nginx/sites-available/web
+            mode: "0644"
+            force: yes
+        - replace:
+            path: /etc/nginx/sites-available/web
+            regexp: "{ServerName}"
+            replace: "{{ hostname }}"
+        - name: Enable site {{ hostname }}
+          file:
+            src: /etc/nginx/sites-available/web
+            dest: /etc/nginx/sites-enabled/web
+            state: link
+
+    # DoH
+    - name: Copy Nginx config for {{ dohEndpoint }}
+      block:
+        - name: Configure site {{ dohEndpoint }}
+          copy:
+            src: nginx/sites-available/doh
+            dest: /etc/nginx/sites-available/doh
+            mode: "0644"
+            force: yes
+        - replace:
+            path: /etc/nginx/sites-available/doh
+            regexp: "{ServerName}"
+            replace: "{{ dohEndpoint }}"
+        - name: Enable site {{ dohEndpoint }}
+          file:
+            src: /etc/nginx/sites-available/doh
+            dest: /etc/nginx/sites-enabled/doh
+            state: link
+
+    # DoT
+    - name: Copy Nginx config for {{ dotEndpoint }}
+      block:
+        - name: Configure site {{ dotEndpoint }}
+          copy:
+            src: nginx/sites-available/dot
+            dest: /etc/nginx/sites-available/dot
+            mode: "0644"
+            force: yes
+        - replace:
+            path: /etc/nginx/sites-available/dot
+            regexp: "{ServerName}"
+            replace: "{{ dotEndpoint }}"
+        - name: Enable site {{ dotEndpoint }}
+          file:
+            src: /etc/nginx/sites-available/dot
+            dest: /etc/nginx/streams-enabled/dot
+            state: link
+
+    # Other
+    - name: Check if dhparams exist
+      stat:
+        path: /etc/letsencrypt/aha-dhparams.pem
+      register: dhparams_exist
+
+    - name: Generate 4096-bit aha-dhparams.pem (This can take a while!)
+      shell: openssl dhparam -out /etc/letsencrypt/aha-dhparams.pem 4096
+      when: not dhparams_exist.stat.exists
+
+    - name: Restart Nginx
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: nginx
+
+    #
+    # Install Golang
+    #
+    - name: Setup Golang
+      block:
+        - name: Install Golang v{{ golangVersion }}
+          include_role:
+            name: gantsign.golang
+          vars:
+            - golang_version: "{{ golangVersion }}"
+            - golang_download_dir: /opt/go
+            - golang_install_dir: "/opt/go/{{ golangVersion }}"
+
+    #
+    # Install DoH server
+    #
+    - name: Setup DoH server
+      block:
+        - name: Download m13253 DoH server version {{ m13253DohServerVersion }}
+          get_url:
+            url: https://github.com/m13253/dns-over-https/archive/v{{ m13253DohServerVersion }}.tar.gz
+            dest: /tmp/v{{ m13253DohServerVersion }}.tar.gz
+            mode: "0644"
+            force: yes
+        - name: Create /opt/m13253/ directory
+          file:
+            path: /opt/m13253/
+            state: directory
+        - name: Unpack m13253 DoH server version {{ m13253DohServerVersion }}
+          unarchive:
+            src: /tmp/v{{ m13253DohServerVersion }}.tar.gz
+            dest: /opt/m13253/
+            remote_src: yes
+        - name: Install DoH server as a service
+          shell: "cd; . /etc/profile; cd /opt/m13253/dns-over-https-{{ m13253DohServerVersion }}; make install"
+          become: true
+        - name: Enable DoH server
+          systemd:
+            name: doh-server
+            enabled: yes
+        - systemd:
+            name: doh-client
+            enabled: false
+        - name: Copy DoH server config
+          copy:
+            src: m13253-doh/doh-server.conf
+            dest: /etc/dns-over-https/doh-server.conf
+            mode: "0644"
+            force: yes
+        - name: Restart DoH server
+          systemd:
+            state: restarted
+            daemon_reload: yes
+            name: doh-server
+
+    #
+    # Install .NET runtime (for custom API's)
+    #
+    - name: Download .NET deb
+      get_url:
+        url: https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb
+        dest: /tmp/packages-microsoft-prod.deb
+        mode: "0644"
+        force: yes
+
+    - name: Setup .NET apt repo
+      apt: deb="/tmp/packages-microsoft-prod.deb"
+
+    - name: Install .NET runtime
+      apt:
+        update_cache: true
+        name: "dotnet-runtime-{{ dotnetRuntimeVersion }}"
+        state: latest
+
+  # # Handlers
+  # handlers:
+  #   # Iptables persistent
+  #   - name: iptables restore v4
+  #     become: true
+  #     shell: iptables-restore < /etc/iptables/rules.v4
+  #   - name: iptables restore v6
+  #     become: true
+  #     shell: ip6tables-restore < /etc/iptables/rules.v6
