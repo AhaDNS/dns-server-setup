@@ -1,0 +1,67 @@
+[ahadns]
+# Pick and adjust ONE of three connection string options listed below.
+
+# Option 1 - Uncomment and adjust the example below when using password based auth to connect to your server
+# 1.2.3.4 ansible_user=user ansible_password=password
+
+# Option 2 - Uncomment and adjust the example below when using key based auth to connect to your server
+# 1.2.3.4 ansible_user=user ansible_ssh_private_key_file=~/private-key-openssh.ppk
+
+# Option 3 - Uncomment and use the example below when running Ansible locally on the server itself.
+# 127.0.0.1 ansible_connection=local
+
+[ahadns:vars]
+# Fully Qualified Domain Name (FQDN) with A (and AAAA) record pointing to your server's IP
+hostname="host.ahadns.net"
+
+# Fully Qualified Domain Name (FQDN) with A (and AAAA) record pointing to your server's IP
+dohEndpoint="doh.host.ahadns.net"
+
+# Fully Qualified Domain Name (FQDN) with A (and AAAA) record pointing to your server's IP
+dotEndpoint="dot.host.ahadns.net"
+
+# public IPv4 server address
+serverIpv4=1.2.3.4
+
+# public IPv6 server address
+serverIpv6=2222:111:222:3::4
+
+# SSH port. Important that this is your current SSH port used.
+# This port will be opened in firewall
+sshPort="22"
+
+# Server timezone
+timezone="Europe/Stockholm"
+
+# Email
+# Used when generating LetsEncrypt SSL certificates
+# and possibly to notify if automatic update fails
+email="my@email.com"
+
+#
+# Automatic updates
+#
+configureAutomaticUpdates=true
+automaticRebootTime="03:00"
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Do not edit these version if you don't
+# know what you're doing!
+
+# Golang version to install.
+# Available version can be seen at: https://galaxy.ansible.com/gantsign/golang
+golangVersion="1.15.5"
+
+# m13253 dns-over-https server version.
+# All releases can be seen at: https://github.com/m13253/dns-over-https/releases
+# Config provided here have only been tested for 2.2.2
+m13253DohServerVersion="2.2.2"
+
+# Dotnet runtime version to install
+# See more at: https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian
+dotnetRuntimeVersion="3.1"
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+############################################
+#Force Python 3 Interpreter (DO NOT CHANGE)
+ansible_python_interpreter=/usr/bin/python3

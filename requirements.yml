@@ -1,0 +1,3 @@
+- src: gantsign.golang
+- src: geerlingguy.certbot
+- src: dev-sec.ssh-hardening
