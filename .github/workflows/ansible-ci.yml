@@ -5,7 +5,7 @@ name: Ansible-CI
 # Run when creating PR to master
 on:
   pull_request:
-    branches: [master]
+    branches: [main, master]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
