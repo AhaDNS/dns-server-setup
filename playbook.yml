@@ -482,6 +482,7 @@
 
     - name: Generate 4096-bit aha-dhparams.pem (This can take a while!)
       shell: openssl dhparam -out /etc/letsencrypt/aha-dhparams.pem 4096
+      become: true
       when: not dhparams_exist.stat.exists
 
     - name: Restart Nginx
