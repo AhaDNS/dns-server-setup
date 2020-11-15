@@ -5,7 +5,7 @@ name: Ansible-CI
 # Run when creating PR to master
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -30,7 +30,7 @@ jobs:
           # targets: |
           #   playbook_1.yml
           #   playbook_2.yml
-          targets: "playbook.yml"
+          targets: "/"
           # [optional]
           # Arguments to override a package and its version to be set explicitly.
           # Must follow the example syntax.
