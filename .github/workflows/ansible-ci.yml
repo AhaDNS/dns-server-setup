@@ -5,7 +5,7 @@ name: Ansible-CI
 # Run when creating PR to master
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -18,9 +18,9 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-        
+
       - name: Lint Ansible Playbook
-        uses: ansible/ansible-lint-action@v4.1.0
+        uses: ansible/ansible-lint-action@v4.1.0.post0
         with:
           # [required]
           # Paths to ansible files (i.e., playbooks, tasks, handlers etc..)
@@ -35,8 +35,7 @@ jobs:
           # Arguments to override a package and its version to be set explicitly.
           # Must follow the example syntax.
           override-deps: |
-            ansible==2.9
-            ansible-lint==4.2.0
+            ansible==2.9.6
           # [optional]
           # Arguments to be passed to the ansible-lint
 
@@ -60,4 +59,3 @@ jobs:
           #                         repeatable.
           #   -c C                  Specify configuration file to use. Defaults to ".ansible-lint"
           args: ""
-          
