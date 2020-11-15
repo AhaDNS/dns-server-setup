@@ -113,22 +113,22 @@
         - name: Set automatic reboot to true
           lineinfile:
             path: /etc/apt/apt.conf.d/50unattended-upgrades
-            regexp: "Unattended-Upgrade::Automatic-Reboot"
+            regexp: 'Unattended-Upgrade::Automatic-Reboot ".*.";'
             line: 'Unattended-Upgrade::Automatic-Reboot "true";'
         - name: Set automatic reboot time to {{ automaticRebootTime }}
           lineinfile:
             path: /etc/apt/apt.conf.d/50unattended-upgrades
-            regexp: "Unattended-Upgrade::Automatic-Reboot-Time"
+            regexp: 'Unattended-Upgrade::Automatic-Reboot-Time ".*.";'
             line: 'Unattended-Upgrade::Automatic-Reboot-Time "{{ automaticRebootTime }}";'
         - name: Set notification mail to {{ email }}
           lineinfile:
             path: /etc/apt/apt.conf.d/50unattended-upgrades
-            regexp: "Unattended-Upgrade::Mail"
+            regexp: 'Unattended-Upgrade::Mail ".*.";'
             line: 'Unattended-Upgrade::Mail "{{ email }}";'
         - name: Configure to only mail on error
           lineinfile:
             path: /etc/apt/apt.conf.d/50unattended-upgrades
-            regexp: "Unattended-Upgrade::MailReport"
+            regexp: 'Unattended-Upgrade::MailReport ".*.";'
             line: 'Unattended-Upgrade::MailReport "only-on-error";'
       when: "configureAutomaticUpdates | bool"
 
@@ -196,7 +196,7 @@
         # the playbook 'hangs' when restoring IPTable rules.
         # This should be investigated and fixed!
         #
-        - name: iptables restore v4
+        - name: iptables restore v4 (This will probably hang first time. Just ctrl + c and re-execute playbook!)
           shell: iptables-restore < /etc/iptables/rules.v4
           become: true
           register: reload_ipv4
@@ -208,11 +208,6 @@
         - name: iptables restore v6
           shell: ip6tables-restore < /etc/iptables/rules.v6
           become: true
-          register: reload_ipv4
-          until: reload_ipv4.rc == 0
-          retries: 10
-          delay: 1
-          ignore_errors: yes
 
     #
     # Unbound setup
@@ -267,33 +262,55 @@
     #
     # Setup local scripts
     #
-    - name: Copy unbound_update.sh
-      copy:
-        src: scripts/bash/unbound_update.sh
-        dest: /etc/ahadns/
-        mode: "0744"
-        force: yes
+    - name: Setup local scripts
+      block:
+        - name: "Create /etc/ahadns directory"
+          file:
+            path: /etc/ahadns
+            state: directory
 
-    - name: Copy unbound_root_hints.sh
-      copy:
-        src: scripts/bash/unbound_root_hints.sh
-        dest: /etc/ahadns/
-        mode: "0744"
-        force: yes
+        - name: Copy unbound_update.sh
+          copy:
+            src: scripts/bash/unbound_update.sh
+            dest: /etc/ahadns/unbound_update.sh
+            mode: "0744"
+            force: yes
 
-    - name: Copy ahadns_log_purge.sh
-      copy:
-        src: scripts/bash/ahadns_log_purge.sh
-        dest: /etc/ahadns/
-        mode: "0744"
-        force: yes
+        - name: Copy unbound_root_hints.sh
+          copy:
+            src: scripts/bash/unbound_root_hints.sh
+            dest: /etc/ahadns/unbound_root_hints.sh
+            mode: "0744"
+            force: yes
 
-    - name: Setup custom cron-jobs
-      copy:
-        src: cron.d/ahadns-cron
-        dest: /etc/cron.d/ahadns-cron
-        mode: "0644"
-        force: yes
+        - name: Copy ahadns_log_purge.sh
+          copy:
+            src: scripts/bash/ahadns_log_purge.sh
+            dest: /etc/ahadns/ahadns_log_purge.sh
+            mode: "0744"
+            force: yes
+
+        - name: Setup custom cron-jobs
+          copy:
+            src: cron.d/ahadns-cron
+            dest: /etc/cron.d/ahadns-cron
+            mode: "0644"
+            force: yes
+
+    - name: Fix windows CR/LF line endings in local scripts
+      replace:
+        path: /etc/ahadns/unbound_update.sh
+        regexp: "\r"
+    - replace:
+        path: /etc/ahadns/unbound_root_hints.sh
+        regexp: "\r"
+    - replace:
+        path: /etc/ahadns/ahadns_log_purge.sh
+        regexp: "\r"
+
+    - name: Make sure local scripts are executable
+      shell: "chmod +x /etc/ahadns/unbound_update.sh; chmod +x /etc/ahadns/unbound_root_hints.sh; chmod +x /etc/ahadns/ahadns_log_purge.sh"
+      become: true
 
     #
     # Execute local scripts to verify functionality
@@ -547,7 +564,7 @@
             name: doh-server
 
     #
-    # Install .NET runtime (for custom API's)
+    # Install .NET runtime (for AhaDNS custom code)
     #
     - name: Download .NET deb
       get_url:
