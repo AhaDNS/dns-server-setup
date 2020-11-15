@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Ansible Lint
+name: Ansible CI
 
 # Run when creating PR to master
 on:
