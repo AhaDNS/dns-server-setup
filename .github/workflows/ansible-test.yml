@@ -1,0 +1,55 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Ansible Test
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the main branch
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Check Ansible Ubuntu focal
+        # You may pin to the exact commit or the version.
+        # uses: roles-ansible/check-ansible-ubuntu-focal-action@d25b854290daefec54e898a4b06fc25b3ae4b770
+        uses: roles-ansible/check-ansible-ubuntu-focal-action@v0.4
+        with:
+          # Paths to the ansible role or playbook you want to be tested. 
+          # For example './', 'roles/my_role/' or 'site.yml'
+
+          targets: './'
+          # When testing playbooks you have to tell ansible
+          # the group you that we write in our hosts file.
+          # For example 'servers' or what group you are using
+          # in the playbook you want to test!
+
+          #group: # optional
+          # When testing playbooks you have to give us
+          # one example host we should use to test your playbook.
+          # For example 'server1.example.com'.
+          # We only spawn one docker container that mean
+          # we can only test one host at the time. Sorry
+
+          #hosts: # optional
+          # When testing playbooks and you are using ansible galaxy,
+          #you may be interested in installing your requirements
+          #from ansible galaxy.
+          #To do this please provide us either the role name directly
+          #-> e.g. 'do1jlr.ansible_version'
+          #or your requiements.yml file.
+          #-> e.g. 'requirements.yml'
+
+          #requirements: # optional
