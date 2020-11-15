@@ -316,9 +316,21 @@
         path: /etc/ahadns/ahadns_log_purge.sh
         regexp: "\r"
 
-    - name: Make sure local scripts are executable
-      shell: "chmod +x /etc/ahadns/unbound_update.sh; chmod +x /etc/ahadns/unbound_root_hints.sh; chmod +x /etc/ahadns/ahadns_log_purge.sh"
-      become: true
+    - name: Make sure /etc/ahadns/unbound_update.sh is executable
+      file:
+        path: /etc/ahadns/unbound_update.sh
+        mode: "0744"
+    - name: Make sure /etc/ahadns/unbound_root_hints.sh is executable
+      file:
+        path: /etc/ahadns/unbound_root_hints.sh
+        mode: "0744"
+    - name: Make sure /etc/ahadns/ahadns_log_purge.sh is executable
+      file:
+        path: /etc/ahadns/ahadns_log_purge.sh
+        mode: "0744"
+
+      # shell: "chmod +x /etc/ahadns/unbound_update.sh; chmod +x /etc/ahadns/unbound_root_hints.sh; chmod +x /etc/ahadns/ahadns_log_purge.sh"
+      # become: true
 
     #
     # Execute local scripts to verify functionality
