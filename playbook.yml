@@ -41,7 +41,6 @@
     - name: Install latest required packages
       apt:
         name: "{{ packages }}"
-        state: latest
       vars:
         packages:
           - iptables
@@ -94,6 +93,7 @@
         src: sysctl.d/ahadns-sysctl.conf
         dest: /etc/sysctl.d/ahadns-sysctl.conf
         force: yes
+        mode: "0644"
     - name: Reload sysctl
       shell: sysctl -p /etc/sysctl.d/ahadns-sysctl.conf
       become: true
@@ -110,6 +110,7 @@
             src: apt.conf.d/20auto-upgrades
             dest: /etc/apt/apt.conf.d/20auto-upgrades
             force: yes
+            mode: "0644"
         - name: Set automatic reboot to true
           lineinfile:
             path: /etc/apt/apt.conf.d/50unattended-upgrades
@@ -142,12 +143,14 @@
             src: iptables/rules.v4
             dest: /etc/iptables/rules.v4
             force: yes
+            mode: "0644"
 
         - name: Copy IPTables conf for IPv6
           copy:
             src: iptables/rules.v6
             dest: /etc/iptables/rules.v6
             force: yes
+            mode: "0644"
 
         - name: Fix windows CR/LF line endings in rules.v4
           replace:
@@ -224,6 +227,7 @@
         src: unbound/ahadns.conf
         dest: /etc/unbound/unbound.conf.d/ahadns.conf
         force: yes
+        mode: "0644"
 
     - name: Download DNS root hints
       get_url:
@@ -255,6 +259,7 @@
         content: nameserver 127.0.0.1
         dest: /etc/resolvconf/resolv.conf.d/original
         force: yes
+        mode: "0644"
 
     - name: Update /etc/resolv.conf
       shell: resolvconf -u
@@ -268,6 +273,7 @@
           file:
             path: /etc/ahadns
             state: directory
+            mode: "0755"
 
         - name: Copy unbound_update.sh
           copy:
@@ -297,14 +303,16 @@
             mode: "0644"
             force: yes
 
-    - name: Fix windows CR/LF line endings in local scripts
+    - name: Fix windows CR/LF line endings in /etc/ahadns/unbound_update.sh
       replace:
         path: /etc/ahadns/unbound_update.sh
         regexp: "\r"
-    - replace:
+    - name: Fix windows CR/LF line endings in /etc/ahadns/unbound_root_hints.sh
+      replace:
         path: /etc/ahadns/unbound_root_hints.sh
         regexp: "\r"
-    - replace:
+    - name: Fix windows CR/LF line endings in /etc/ahadns/ahadns_log_purge.sh
+      replace:
         path: /etc/ahadns/ahadns_log_purge.sh
         regexp: "\r"
 
@@ -343,6 +351,7 @@
           file:
             path: /etc/nginx/streams-enabled
             state: directory
+            mode: "0755"
         - name: Secure Nginx TLS versions
           lineinfile:
             path: /etc/nginx/nginx.conf
@@ -443,7 +452,8 @@
             dest: /etc/nginx/sites-available/web
             mode: "0644"
             force: yes
-        - replace:
+        - name: Insert hostname {{ hostname }} in /etc/nginx/sites-available/web
+          replace:
             path: /etc/nginx/sites-available/web
             regexp: "{ServerName}"
             replace: "{{ hostname }}"
@@ -462,7 +472,8 @@
             dest: /etc/nginx/sites-available/doh
             mode: "0644"
             force: yes
-        - replace:
+        - name: Insert hostname {{ dohEndpoint }} to /etc/nginx/sites-available/doh
+          replace:
             path: /etc/nginx/sites-available/doh
             regexp: "{ServerName}"
             replace: "{{ dohEndpoint }}"
@@ -481,7 +492,8 @@
             dest: /etc/nginx/sites-available/dot
             mode: "0644"
             force: yes
-        - replace:
+        - name: Insert hostname {{ dotEndpoint }} to /etc/nginx/sites-available/dot
+          replace:
             path: /etc/nginx/sites-available/dot
             regexp: "{ServerName}"
             replace: "{{ dotEndpoint }}"
@@ -536,6 +548,7 @@
           file:
             path: /opt/m13253/
             state: directory
+            mode: "0755"
         - name: Unpack m13253 DoH server version {{ m13253DohServerVersion }}
           unarchive:
             src: /tmp/v{{ m13253DohServerVersion }}.tar.gz
@@ -548,7 +561,8 @@
           systemd:
             name: doh-server
             enabled: yes
-        - systemd:
+        - name: Disable DoH client
+          systemd:
             name: doh-client
             enabled: false
         - name: Copy DoH server config
@@ -580,7 +594,6 @@
       apt:
         update_cache: true
         name: "dotnet-runtime-{{ dotnetRuntimeVersion }}"
-        state: latest
 
   # # Handlers
   # handlers:
