@@ -53,6 +53,7 @@
           - unattended-upgrades
           - apt-listchanges
           - bsd-mailx
+          - apt-transport-https
       register: install_result
 
     - name: Enable nginx
@@ -602,10 +603,10 @@
     - name: Setup .NET apt repo
       apt: deb="/tmp/packages-microsoft-prod.deb"
 
-    - name: Install .NET runtime
+    - name: Install ASP.NET runtime
       apt:
         update_cache: true
-        name: "dotnet-runtime-{{ dotnetRuntimeVersion }}"
+        name: "aspnetcore-runtime-{{ dotnetRuntimeVersion }}"
 
   # # Handlers
   # handlers:
