@@ -19,14 +19,14 @@
 -A INPUT -i lo -j ACCEPT
 
 # Rate limit
--A INPUT -i {wanInterface} -d {Ipv6Addr} -p udp --dport 53 -m hashlimit --hashlimit-above 30/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsipv6 -j REJECT
--A INPUT -i {wanInterface} -d {Ipv6Addr} -p tcp -m multiport --dports 80,443,53,853 -m hashlimit --hashlimit-above 30/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsipv6 -j REJECT
+-A INPUT -i {wanInterface} -d {Ipv6Addr} -p udp --dport 53 -m hashlimit --hashlimit-above 60/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsipv6 -j REJECT
+-A INPUT -i {wanInterface} -d {Ipv6Addr} -p tcp -m multiport --dports 80,443,53,853 -m hashlimit --hashlimit-above 60/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsipv6 -j REJECT
 
 # Open inputs
 -A INPUT -i {wanInterface} -d {Ipv6Addr} -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 53,80,443,853 -j ACCEPT
 -A INPUT -i {wanInterface} -d {Ipv6Addr} -p udp -m state --state NEW,ESTABLISHED -m udp --dport 53 -j ACCEPT
 
--A INPUT -i {wanInterface} -p icmpv6 -j ACCEPT --match limit --limit 60/second
+-A INPUT -i {wanInterface} -p icmpv6 -j ACCEPT --match limit --limit 100/second
 
 # Log rejected connections (Debugging)
 -A INPUT --match limit --limit 1/sec -j LOG --log-prefix "IPTables-Rejected: "

@@ -8,7 +8,7 @@ log_format anonymized '[$time_local] - from: $remote_addr_anon - $remote_user '
    '"$request" status: $status bytes_sent: $body_bytes_sent '
    '"$http_referer" "$http_user_agent"';
 
-limit_req_zone $binary_remote_addr zone=userip:32m rate=100r/s;
+limit_req_zone $binary_remote_addr zone=userip:32m rate=150r/s;
 
 upstream doh-endpoints {
     server    127.0.0.1:8053;
@@ -55,6 +55,9 @@ server {
 
         # Disable server tokens (server version and info)
         server_tokens off;
+
+        # Limit max request time to 10 seconds
+        keepalive_timeout 10s;
 
     listen [::]:443 http2 ssl reuseport;
     listen 443 http2 ssl reuseport;
