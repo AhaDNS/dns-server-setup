@@ -12,23 +12,19 @@
 
 [ahadns:vars]
 # Fully Qualified Domain Name (FQDN) with A (and AAAA) record pointing to your server's IP
-hostname="host.ahadns.net"
+# hostname="test.ahadns.net"
 
 # Fully Qualified Domain Name (FQDN) with A (and AAAA) record pointing to your server's IP
-dohEndpoint="doh.host.ahadns.net"
+# dohEndpoint="doh.test.ahadns.net"
 
 # Fully Qualified Domain Name (FQDN) with A (and AAAA) record pointing to your server's IP
-dotEndpoint="dot.host.ahadns.net"
+# dotEndpoint="dot.test.ahadns.net"
 
 # public IPv4 server address
-serverIpv4=1.2.3.4
+# serverIpv4=1.2.3.4
 
 # public IPv6 server address
-serverIpv6=2222:111:222:3::4
-
-# SSH port. Important that this is your current SSH port used.
-# This port will be opened in firewall
-sshPort="22"
+serverIpv6=2222:33:44:55::1
 
 # Server timezone
 timezone="Europe/Stockholm"
@@ -37,6 +33,14 @@ timezone="Europe/Stockholm"
 # Used when generating LetsEncrypt SSL certificates
 # and possibly to notify if automatic update fails
 email="my@email.com"
+
+#
+# Ports
+#
+
+# SSH port. Important that this is your current SSH port used.
+# This port will be opened in firewall
+sshPort="22"
 
 #
 # Automatic updates
@@ -54,12 +58,12 @@ golangVersion="1.15.5"
 
 # m13253 dns-over-https server version.
 # All releases can be seen at: https://github.com/m13253/dns-over-https/releases
-# Config provided here have only been tested for 2.2.2
-m13253DohServerVersion="2.2.2"
+# Config provided here have only been tested for 2.2.2 & 2.2.3
+m13253DohServerVersion="2.2.3"
 
 # Dotnet runtime version to install
 # See more at: https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian
-dotnetRuntimeVersion="3.1"
+dotnetVersion="3.1"
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
 ############################################
