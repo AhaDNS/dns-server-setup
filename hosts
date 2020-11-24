@@ -12,16 +12,16 @@
 
 [ahadns:vars]
 # Fully Qualified Domain Name (FQDN) with A (and AAAA) record pointing to your server's IP
-# hostname="test.ahadns.net"
+hostname="test.ahadns.net"
 
 # Fully Qualified Domain Name (FQDN) with A (and AAAA) record pointing to your server's IP
-# dohEndpoint="doh.test.ahadns.net"
+dohEndpoint="doh.test.ahadns.net"
 
 # Fully Qualified Domain Name (FQDN) with A (and AAAA) record pointing to your server's IP
-# dotEndpoint="dot.test.ahadns.net"
+dotEndpoint="dot.test.ahadns.net"
 
 # public IPv4 server address
-# serverIpv4=1.2.3.4
+serverIpv4=1.2.3.4
 
 # public IPv6 server address
 serverIpv6=2222:33:44:55::1
