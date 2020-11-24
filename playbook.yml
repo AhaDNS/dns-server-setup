@@ -91,12 +91,12 @@
     #
     - name: Install custom sysctl.conf
       copy:
-        src: sysctl.d/ahadns-sysctl.conf
-        dest: /etc/sysctl.d/ahadns-sysctl.conf
+        src: sysctl.d/99-ahadns-sysctl.conf
+        dest: /etc/sysctl.d/99-ahadns-sysctl.conf
         force: yes
         mode: "0644"
     - name: Reload sysctl
-      shell: sysctl -p /etc/sysctl.d/ahadns-sysctl.conf
+      shell: sysctl -p /etc/sysctl.d/99-ahadns-sysctl.conf
       become: true
 
     #
@@ -117,21 +117,31 @@
             path: /etc/apt/apt.conf.d/50unattended-upgrades
             regexp: 'Unattended-Upgrade::Automatic-Reboot ".*.";'
             line: 'Unattended-Upgrade::Automatic-Reboot "true";'
+            state: present
+        - name: Set automatic reboot when user is logged in to true
+          lineinfile:
+            path: /etc/apt/apt.conf.d/50unattended-upgrades
+            regexp: 'Unattended-Upgrade::Automatic-Reboot-WithUsers ".*.";'
+            line: 'Unattended-Upgrade::Automatic-Reboot-WithUsers "true";'
+            state: present
         - name: Set automatic reboot time to {{ automaticRebootTime }}
           lineinfile:
             path: /etc/apt/apt.conf.d/50unattended-upgrades
             regexp: 'Unattended-Upgrade::Automatic-Reboot-Time ".*.";'
             line: 'Unattended-Upgrade::Automatic-Reboot-Time "{{ automaticRebootTime }}";'
+            state: present
         - name: Set notification mail to {{ email }}
           lineinfile:
             path: /etc/apt/apt.conf.d/50unattended-upgrades
             regexp: 'Unattended-Upgrade::Mail ".*.";'
             line: 'Unattended-Upgrade::Mail "{{ email }}";'
+            state: present
         - name: Configure to only mail on error
           lineinfile:
             path: /etc/apt/apt.conf.d/50unattended-upgrades
             regexp: 'Unattended-Upgrade::MailReport ".*.";'
             line: 'Unattended-Upgrade::MailReport "only-on-error";'
+            state: present
       when: "configureAutomaticUpdates | bool"
 
     #
@@ -157,13 +167,11 @@
           replace:
             path: /etc/iptables/rules.v4
             regexp: "\r"
-            replace: ""
 
         - name: Fix windows CR/LF line endings in rules.v6
           replace:
             path: /etc/iptables/rules.v6
             regexp: "\r"
-            replace: ""
 
         - name: Update IP Address in rules.v4
           replace:
@@ -205,9 +213,9 @@
           become: true
           register: reload_ipv4
           until: reload_ipv4.rc == 0
-          retries: 10
+          retries: 2
           delay: 1
-          ignore_errors: yes
+          ignore_errors: no
 
         - name: iptables restore v6
           shell: ip6tables-restore < /etc/iptables/rules.v6
@@ -344,6 +352,19 @@
       shell: /etc/ahadns/unbound_root_hints.sh
 
     #
+    # Custom /etc/security/limits.d configuration
+    # to increase max open files for all users.
+    # Needed for Nginx to handle many connections.
+    # Verify with "ulimit -a"
+    #
+    - name: Increase max open files for all users
+      copy:
+        src: security/limits.d/99-ahadns-limits.conf
+        dest: /etc/security/limits.d/99-ahadns-limits.conf
+        mode: "0644"
+        force: yes
+
+    #
     # Nginx setup
     #
     - name: Configure Nginx
@@ -371,11 +392,17 @@
             regexp: "ssl_protocols "
             line: ssl_protocols TLSv1.2 TLSv1.3;
             state: present
-        - name: Configure Nginx to prefer server ciphers
+        - name: Configure Nginx to not prefer server ciphers
           lineinfile:
             path: /etc/nginx/nginx.conf
             regexp: "ssl_prefer_server_ciphers "
-            line: ssl_prefer_server_ciphers on;
+            line: ssl_prefer_server_ciphers off;
+            state: present
+        - name: Increase Nginx worker_connections to 10000
+          lineinfile:
+            path: /etc/nginx/nginx.conf
+            regexp: "worker_connections "
+            line: worker_connections 10000;
             state: present
         - name: Configure default Nginx site
           copy:
@@ -603,10 +630,15 @@
     - name: Setup .NET apt repo
       apt: deb="/tmp/packages-microsoft-prod.deb"
 
-    - name: Install ASP.NET runtime
+    - name: Install .NET Core runtime
       apt:
         update_cache: true
-        name: "aspnetcore-runtime-{{ dotnetRuntimeVersion }}"
+        name: "dotnet-runtime-{{ dotnetVersion }}"
+
+    - name: Install ASP.NET Core runtime
+      apt:
+        update_cache: true
+        name: "aspnetcore-runtime-{{ dotnetVersion }}"
 
   # # Handlers
   # handlers:

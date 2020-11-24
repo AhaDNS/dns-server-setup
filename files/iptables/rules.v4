@@ -20,16 +20,16 @@
 -A INPUT -i lo -j ACCEPT
 
 # Rate limit
--A INPUT -i {wanInterface} -d {Ipv4Addr} -p tcp -m multiport --dports 53,80,443,853 -m hashlimit --hashlimit-above 45/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnstcp4 -j REJECT --reject-with icmp-port-unreachable
--A INPUT -i {wanInterface} -d {Ipv4Addr} -p udp --dport 53 -m hashlimit --hashlimit-above 60/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsudp4 -j REJECT --reject-with icmp-port-unreachable
+-A INPUT -i {wanInterface} -d {Ipv4Addr} -p tcp -m multiport --dports 53,80,443,853 -m hashlimit --hashlimit-above 100/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnstcp4 -j REJECT --reject-with icmp-port-unreachable
+-A INPUT -i {wanInterface} -d {Ipv4Addr} -p udp --dport 53 -m hashlimit --hashlimit-above 100/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsudp4 -j REJECT --reject-with icmp-port-unreachable
 
 # Open inputs
 -A INPUT -p tcp -m state --state NEW,ESTABLISHED -m tcp --dport {sshPort} -j ACCEPT
 -A INPUT -i {wanInterface} -d {Ipv4Addr} -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 53,80,443,853 -j ACCEPT
 -A INPUT -i {wanInterface} -d {Ipv4Addr} -p udp -m state --state NEW,ESTABLISHED --dport 53 -j ACCEPT
 
--A INPUT -i {wanInterface} -d {Ipv4Addr} -p icmp --icmp-type echo-request -m state --state NEW,ESTABLISHED -j ACCEPT --match limit --limit 60/second
--A INPUT -i {wanInterface} -d {Ipv4Addr} -p icmp --icmp-type echo-reply -m state --state NEW,ESTABLISHED -j ACCEPT --match limit --limit 60/second
+-A INPUT -i {wanInterface} -d {Ipv4Addr} -p icmp --icmp-type echo-request -m state --state NEW,ESTABLISHED -j ACCEPT --match limit --limit 100/second
+-A INPUT -i {wanInterface} -d {Ipv4Addr} -p icmp --icmp-type echo-reply -m state --state NEW,ESTABLISHED -j ACCEPT --match limit --limit 100/second
 
 # Log rejected connections (Debugging)
 -A INPUT --match limit --limit 1/sec -j LOG --log-prefix "IPTables-Rejected: "
