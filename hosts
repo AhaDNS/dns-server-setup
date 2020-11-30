@@ -48,6 +48,11 @@ sshPort="22"
 configureAutomaticUpdates=true
 automaticRebootTime="03:00"
 
+#
+# Statistics API key
+# This should be changed to something more secure.
+ahaDnsStatisticsApiKey="supersecret"
+
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Do not edit these version if you don't
 # know what you're doing!
@@ -64,6 +69,10 @@ m13253DohServerVersion="2.2.3"
 # Dotnet runtime version to install
 # See more at: https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian
 dotnetVersion="3.1"
+
+# AhaDNS server statistics API version.
+# All releases can be seen at: https://github.com/AhaDNS/Aha.Dns.Statistics/releases
+ahaDnsStatisticsApiVersion="0.0.2-alpha"
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
 ############################################

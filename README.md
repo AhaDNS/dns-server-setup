@@ -16,6 +16,8 @@ This ansible playbook deploys a fully configured AhaDNS server instance (except 
 - Locked-down firewall using IPTables.
 - Optimized sysctl config.
 - Automatic security updates enabled.
+- DNS request statistics API from [AhaDNS/Aha.Dns.Statistics](https://github.com/AhaDNS/Aha.Dns.Statistics)
+  - GET endpoint will be available at `https://{{ hostname }}/UnboundControlStats?api_key={{ ahaDnsStatisticsApiKey }}`
 
 All configuration that will be applied can be found in the `files` directory.
 The playbook is primarily created for AhaDNS but the public is of course welcome to use it as well.
@@ -51,6 +53,8 @@ This is a high performance setup and does not provide any graphical user interfa
 
 - Tune the unbound config to your system (edit `/etc/unbound/unbound.conf.d/ahadns.conf`)
 - Learn how the block/white-list are created and updated (see `/etc/ahadns/unbound_update.sh`)
+- Check your DNS request statistics by doing a GET query `curl https://{{ hostname }}/UnboundControlStats?api_key={{ ahaDnsStatisticsApiKey }}`
+  - Change `{{ hostname }}` and `{{ ahaDnsStatisticsApiKey }}` with values used in the hosts file during setup
 
 ## Support
 
@@ -81,4 +85,4 @@ We do not provide any uninstall instructions yet. For now, we recommend you to r
 
 ## License
 
-Unless otherwise specified, all code in this repository is released under the Apache License 2.0. See the [repository's LICENSE file](https://github.com/AhaDNS/dns-server-setup/blob/main/LICENSE) for details.
+Unless otherwise specified, all code in this repository is released under the GNU General Public License v3.0. See the [repository's LICENSE file](https://github.com/AhaDNS/dns-server-setup/blob/main/LICENSE) for details.
