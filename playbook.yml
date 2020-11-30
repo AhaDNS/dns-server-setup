@@ -620,25 +620,84 @@
     #
     # Install .NET runtime (for AhaDNS custom code)
     #
-    - name: Download .NET deb
-      get_url:
-        url: https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb
-        dest: /tmp/packages-microsoft-prod.deb
-        mode: "0644"
-        force: yes
+    - name: Install .NET dependencies
+      block:
+        - name: Download .NET deb
+          get_url:
+            url: https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb
+            dest: /tmp/packages-microsoft-prod.deb
+            mode: "0644"
+            force: yes
 
-    - name: Setup .NET apt repo
-      apt: deb="/tmp/packages-microsoft-prod.deb"
+        - name: Setup .NET apt repo
+          apt: deb="/tmp/packages-microsoft-prod.deb"
 
-    - name: Install .NET Core runtime
-      apt:
-        update_cache: true
-        name: "dotnet-runtime-{{ dotnetVersion }}"
+        - name: Install .NET Core SDK
+          apt:
+            update_cache: true
+            name: "dotnet-sdk-{{ dotnetVersion }}"
 
-    - name: Install ASP.NET Core runtime
-      apt:
-        update_cache: true
-        name: "aspnetcore-runtime-{{ dotnetVersion }}"
+    #
+    # Install AhaDNS server statistics API
+    #
+    - name: Setup AhaDNS server statistics API
+      block:
+        - name: Download AhaDNS statistics API version {{ ahaDnsStatisticsApiVersion }}
+          get_url:
+            url: https://github.com/AhaDNS/Aha.Dns.Statistics/archive/v{{ ahaDnsStatisticsApiVersion }}.tar.gz
+            dest: /tmp/aha-statistics-v{{ ahaDnsStatisticsApiVersion }}.tar.gz
+            mode: "0644"
+            force: yes
+
+        - name: Remove folder /opt/aha-dns-statisticsapi/
+          file:
+            path: /opt/aha-dns-statisticsapi/
+            state: absent
+
+        - name: Create folder /opt/aha-dns-statisticsapi/
+          file:
+            path: /opt/aha-dns-statisticsapi/
+            state: directory
+            mode: "0755"
+
+        - name: Unpack AhaDNS statistics API version {{ ahaDnsStatisticsApiVersion }}
+          unarchive:
+            src: /tmp/aha-statistics-v{{ ahaDnsStatisticsApiVersion }}.tar.gz
+            dest: /opt/aha-dns-statisticsapi/
+            remote_src: yes
+
+        - name: Build AhaDNS statistics API version {{ ahaDnsStatisticsApiVersion }}
+          shell: >
+            /usr/bin/dotnet publish
+            --configuration Release
+            /opt/aha-dns-statisticsapi/Aha.Dns.Statistics-{{ ahaDnsStatisticsApiVersion }}/src/Aha.Dns.Statistics/Aha.Dns.Statistics.ServerApi
+            --output
+            /opt/aha-dns-statisticsapi/
+
+        - name: Configure AhaDNS statistics API key
+          lineinfile:
+            path: /opt/aha-dns-statisticsapi/appsettings.json
+            regexp: '"ApiKey": ".*.",'
+            line: '"ApiKey": "{{ ahaDnsStatisticsApiKey }}",'
+            state: present
+
+        - name: Create aha-dns-statisticsapi service
+          copy:
+            src: systemd/aha-dns-statisticsapi.service
+            dest: /etc/systemd/system/aha-dns-statisticsapi.service
+            mode: "0644"
+            force: yes
+
+        - name: Enable aha-dns-statisticsapi service
+          systemd:
+            name: aha-dns-statisticsapi
+            enabled: yes
+
+        - name: Restart aha-dns-statisticsapi service
+          systemd:
+            state: restarted
+            daemon_reload: yes
+            name: aha-dns-statisticsapi
 
   # # Handlers
   # handlers:

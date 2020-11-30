@@ -1,0 +1,17 @@
+[Unit]
+Description=AhaDNS server api used to fetch DNS query statistics
+
+[Service]
+WorkingDirectory=/opt/aha-dns-statisticsapi
+ExecStart=/usr/bin/dotnet /opt/aha-dns-statisticsapi/Aha.Dns.Statistics.ServerApi.dll --urls=http://127.0.0.1:5000/
+Restart=always
+# Restart service after 10 seconds if the dotnet service crashes:
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=aha-dns-statisticsapi
+User=root
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+[Install]
+WantedBy=multi-user.target
