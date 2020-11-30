@@ -667,7 +667,9 @@
             remote_src: yes
 
         - name: Build AhaDNS statistics API version {{ ahaDnsStatisticsApiVersion }}
-          shell: "/usr/bin/dotnet publish --configuration Release /opt/aha-dns-statisticsapi/Aha.Dns.Statistics-{{ ahaDnsStatisticsApiVersion }}/src/Aha.Dns.Statistics/Aha.Dns.Statistics.ServerApi --output /opt/aha-dns-statisticsapi/"
+          shell: "/usr/bin/dotnet publish 
+          --configuration Release /opt/aha-dns-statisticsapi/Aha.Dns.Statistics-{{ ahaDnsStatisticsApiVersion }}/src/Aha.Dns.Statistics/Aha.Dns.Statistics.ServerApi 
+          --output /opt/aha-dns-statisticsapi/"
 
         - name: Configure AhaDNS statistics API key
           lineinfile:
