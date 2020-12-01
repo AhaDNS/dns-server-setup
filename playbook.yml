@@ -576,6 +576,25 @@
     #
     # Install DoH server
     #
+    - name: Completely remove old DoH server version (if installed)
+      block:
+        - name: Try stop DoH server (error here is fine...)
+          systemd:
+            name: doh-server
+            state: stopped
+          ignore_errors: true
+        - name: Uninstall old DoH server version
+          shell: "cd; . /etc/profile; cd /opt/m13253/; make uninstall; cd"
+          become: true
+        - name: Remove old DoH server config files at /etc/dns-over-https/
+          file:
+            path: /etc/dns-over-https/
+            state: absent
+        - name: Remove old DoH server version at /opt/m13253/
+          file:
+            path: /opt/m13253/
+            state: absent
+
     - name: Setup DoH server
       block:
         - name: Download m13253 DoH server version {{ m13253DohServerVersion }}
@@ -594,8 +613,11 @@
             src: /tmp/v{{ m13253DohServerVersion }}.tar.gz
             dest: /opt/m13253/
             remote_src: yes
+        - name: Move unpacked files
+          shell: "mv /opt/m13253/dns-over-https-{{ m13253DohServerVersion }}/* /opt/m13253/"
+          become: true
         - name: Install DoH server as a service
-          shell: "cd; . /etc/profile; cd /opt/m13253/dns-over-https-{{ m13253DohServerVersion }}; make install"
+          shell: "cd; . /etc/profile; cd /opt/m13253/; make install"
           become: true
         - name: Enable DoH server
           systemd:
@@ -670,7 +692,7 @@
           shell: >
             /usr/bin/dotnet publish
             --configuration Release
-            /opt/aha-dns-statisticsapi/Aha.Dns.Statistics-{{ ahaDnsStatisticsApiVersion }}/src/Aha.Dns.Statistics/Aha.Dns.Statistics.ServerApi
+            /opt/aha-dns-statisticsapi/Aha.Dns.Statistics-{{ ahaDnsStatisticsApiVersion }}/src/Aha.Dns.Statistics.ServerApi
             --output
             /opt/aha-dns-statisticsapi/
 
@@ -698,13 +720,3 @@
             state: restarted
             daemon_reload: yes
             name: aha-dns-statisticsapi
-
-  # # Handlers
-  # handlers:
-  #   # Iptables persistent
-  #   - name: iptables restore v4
-  #     become: true
-  #     shell: iptables-restore < /etc/iptables/rules.v4
-  #   - name: iptables restore v6
-  #     become: true
-  #     shell: ip6tables-restore < /etc/iptables/rules.v6
