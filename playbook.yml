@@ -363,6 +363,18 @@
         dest: /etc/security/limits.d/99-ahadns-limits.conf
         mode: "0644"
         force: yes
+    - name: Increase max open files in /etc/systemd/system.conf
+      lineinfile:
+        path: /etc/systemd/system.conf
+        regexp: "DefaultLimitNOFILE"
+        line: DefaultLimitNOFILE=256000:1000000
+        state: present
+    - name: Increase max open files in /etc/systemd/user.conf
+      lineinfile:
+        path: /etc/systemd/user.conf
+        regexp: "DefaultLimitNOFILE"
+        line: DefaultLimitNOFILE=256000:1000000
+        state: present
 
     #
     # Nginx setup
