@@ -692,7 +692,7 @@
           shell: >
             /usr/bin/dotnet publish
             --configuration Release
-            /opt/aha-dns-statisticsapi/Aha.Dns.Statistics-{{ ahaDnsStatisticsApiVersion }}/src/Aha.Dns.Statistics/Aha.Dns.Statistics.ServerApi
+            /opt/aha-dns-statisticsapi/Aha.Dns.Statistics-{{ ahaDnsStatisticsApiVersion }}/src/Aha.Dns.Statistics.ServerApi
             --output
             /opt/aha-dns-statisticsapi/
 
