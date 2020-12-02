@@ -8,3 +8,5 @@ Type of changes can be `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Se
 ### Added
 
 - Initial version of automated AhaDNS DNS server setup
+- A CHANGELOG file to this project
+- Initial version of a PR template
