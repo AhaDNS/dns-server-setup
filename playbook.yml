@@ -8,7 +8,26 @@
 #
 - hosts: ahadns
   become: true
+  vars:
+    # Get number of CPU cores & total mb ram on machine
+    num_cores: "{{ [ansible_processor_cores, ansible_processor_count, ansible_processor_vcpus] | max | int }}"
+    total_ram_mb: "{{ ansible_memtotal_mb }}"
+
+    # Calculate unbound cache based on number of cores and total ram
+    # The factor 2.5 can be tweaked and is currently under assesment!
+    unbound_rrset_cache_mb: "{{ ((total_ram_mb | int) / (2.5 * (num_cores | int))) | int }}"
+    unbound_msg_cache_mb: "{{ ((unbound_rrset_cache_mb | int) * 0.5) | int }}"
+    theoretical_ubound_mem_usage_mb: "{{ (((unbound_rrset_cache_mb | int) + (unbound_msg_cache_mb | int)) | int) * (num_cores | int) }}"
+
   tasks:
+    - debug:
+        msg: "Identified machine with {{ num_cores }} cpu cores and {{ total_ram_mb }}mb RAM"
+    - debug:
+        msg: >
+          Will set unbound rrset-cache-size to {{ unbound_rrset_cache_mb }}m
+          and msg-cache-size to {{ unbound_msg_cache_mb }}m
+          which should lead to a total memory usage of {{ theoretical_ubound_mem_usage_mb }}m
+
     - name: Update and upgrade apt packages
       apt:
         update_cache: true
@@ -237,6 +256,30 @@
         dest: /etc/unbound/unbound.conf.d/ahadns.conf
         force: yes
         mode: "0644"
+
+    - name: Set unbound num_threads to {{ num_cores | int }}
+      replace:
+        path: /etc/unbound/unbound.conf.d/ahadns.conf
+        regexp: "{num_cores}"
+        replace: "{{ num_cores | int }}"
+
+    - name: Set unbound slabs to {{ (num_cores | int) * 2 | int }}
+      replace:
+        path: /etc/unbound/unbound.conf.d/ahadns.conf
+        regexp: "{num_coresx2}"
+        replace: "{{ (num_cores | int) * 2 | int }}"
+
+    - name: Set unbound rrset-cache-size to {{ unbound_rrset_cache_mb | int }}m
+      replace:
+        path: /etc/unbound/unbound.conf.d/ahadns.conf
+        regexp: "{rrset_cache_mb}"
+        replace: "{{ unbound_rrset_cache_mb | int }}"
+
+    - name: Set unbound msg-cache-size to {{ unbound_msg_cache_mb | int }}m
+      replace:
+        path: /etc/unbound/unbound.conf.d/ahadns.conf
+        regexp: "{msg_cache_mb}"
+        replace: "{{ unbound_msg_cache_mb | int }}"
 
     - name: Download DNS root hints
       get_url:
