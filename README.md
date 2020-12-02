@@ -42,6 +42,8 @@ Please, do not set up public DNS servers if you don't know what you're doing. Th
 4. Edit the `hosts` file to reflect your setup, i.e. change vars. `playbook.yml` does NOT need to be changed.
 5. Start playbook using `ansible-playbook playbook.yml -i hosts --ask-become-pass`
 
+- It is safe to re-execute the playbook multiple times.
+
 ### Supported distros
 
 - Ubuntu 20.04 LTS
@@ -51,10 +53,11 @@ Please, do not set up public DNS servers if you don't know what you're doing. Th
 
 This is a high performance setup and does not provide any graphical user interface for configuration. After installation, you might want to:
 
-- Tune the unbound config to your system (edit `/etc/unbound/unbound.conf.d/ahadns.conf`)
 - Learn how the block/white-list are created and updated (see `/etc/ahadns/unbound_update.sh`)
 - Check your DNS request statistics by doing a GET query `curl https://{{ hostname }}/UnboundControlStats?api_key={{ ahaDnsStatisticsApiKey }}`
   - Change `{{ hostname }}` and `{{ ahaDnsStatisticsApiKey }}` with values used in the hosts file during setup
+- Tune the unbound config to your system (edit `/etc/unbound/unbound.conf.d/ahadns.conf`)
+  - Should not be needed as it's automatically tuned during playbook execution
 
 ## Support
 
