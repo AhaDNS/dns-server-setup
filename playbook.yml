@@ -54,6 +54,7 @@
       copy:
         dest: /etc/resolv.conf
         content: nameserver 1.1.1.1
+        mode: "0644"
 
     - name: Update and upgrade apt packages
       apt:
