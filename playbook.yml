@@ -14,8 +14,8 @@
     total_ram_mb: "{{ ansible_memtotal_mb }}"
 
     # Calculate unbound cache based on number of cores and total ram
-    # The factor 2.5 can be tweaked and is currently under assesment!
-    unbound_rrset_cache_mb: "{{ ((total_ram_mb | int) / (2.5 * (num_cores | int))) | int }}"
+    # The factor 2.0 can be tweaked and is currently under assesment!
+    unbound_rrset_cache_mb: "{{ ((total_ram_mb | int) / (2.0 * (num_cores | int))) | int }}"
     unbound_msg_cache_mb: "{{ ((unbound_rrset_cache_mb | int) * 0.5) | int }}"
     theoretical_ubound_mem_usage_mb: "{{ (((unbound_rrset_cache_mb | int) + (unbound_msg_cache_mb | int)) | int) * (num_cores | int) }}"
 
@@ -27,11 +27,6 @@
           Will set unbound rrset-cache-size to {{ unbound_rrset_cache_mb }}m
           and msg-cache-size to {{ unbound_msg_cache_mb }}m
           which should lead to a total memory usage of {{ theoretical_ubound_mem_usage_mb }}m
-
-    - name: Update and upgrade apt packages
-      apt:
-        update_cache: true
-        upgrade: true
 
     - name: Set system timezone to {{ timezone }}
       timezone:
@@ -50,12 +45,20 @@
         daemon_reload: yes
         name: systemd-resolved
 
-    - name: Set temporary nameserver to 1.1.1.1
-      lineinfile:
+    - name: Remove current /etc/resolv.conf
+      file:
         path: /etc/resolv.conf
-        regexp: "nameserver"
-        line: nameserver 1.1.1.1
-        state: present
+        state: absent
+
+    - name: Set temporary nameserver to 1.1.1.1
+      copy:
+        dest: /etc/resolv.conf
+        content: nameserver 1.1.1.1
+
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: true
+        upgrade: true
 
     - name: Install latest required packages
       apt:
@@ -89,21 +92,6 @@
       command: ansible-galaxy install -r "{{ playbook_dir }}/requirements.yml"
       delegate_to: localhost
       become: false
-
-    #
-    # Secure SSH
-    #
-    # - name: Secure SSH config
-    #   include_role:
-    #     name: dev-sec.ssh-hardening
-    #   vars:
-    #     ssh_server_ports: ["{{ sshPort }}"]
-    #     ssh_x11_forwarding: false
-    #     ssh_permit_root_login: "{{ sshAllowRootLogin }}"
-    #     ssh_max_auth_retries: 5
-    #     ssh_server_password_login: "{{ sshAllowPasswordAuth }}"
-    #     ssh_allow_users: "{{ sshAllowUsers }}"
-    #   when: "{{ secureSSH }}"
 
     #
     # Optimize sysctl.conf
@@ -257,6 +245,12 @@
         force: yes
         mode: "0644"
 
+    - name: Make unbound listen to IPv6 {{ serverIpv6 }}
+      replace:
+        path: /etc/unbound/unbound.conf.d/ahadns.conf
+        regexp: "{Ipv6Addr}"
+        replace: "{{ serverIpv6 }}"
+
     - name: Set unbound num_threads to {{ num_cores | int }}
       replace:
         path: /etc/unbound/unbound.conf.d/ahadns.conf
@@ -312,6 +306,9 @@
         dest: /etc/resolvconf/resolv.conf.d/original
         force: yes
         mode: "0644"
+
+    - name: Reconfigure resolvconf
+      shell: dpkg-reconfigure -f noninteractive resolvconf
 
     - name: Update /etc/resolv.conf
       shell: resolvconf -u
