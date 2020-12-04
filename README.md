@@ -40,7 +40,7 @@ Please, do not set up public DNS servers if you don't know what you're doing. Th
 2. Install Ansible on the machine that will run the playbook.
 3. Clone this repository using `git clone https://github.com/AhaDNS/dns-server-setup.git`
 4. Edit the `hosts` file to reflect your setup, i.e. change vars. `playbook.yml` does NOT need to be changed.
-5. Start playbook using `ansible-playbook playbook.yml -i hosts --ask-become-pass`
+5. Start playbook using `ansible-playbook playbook.yml -i hosts --ask-become-pass -T 60`
 
 - It is safe to re-execute the playbook multiple times.
 
