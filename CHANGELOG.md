@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.  
 Type of changes can be `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
+## [1.0.2] - 2020-12-05
+
+### Fixed
+
+- Fixed issue with accidental spaces in ahadns cron.d file making custom cronjobs to not execute
+
 ## [1.0.1] - 2020-12-04
 
 ### Fixed

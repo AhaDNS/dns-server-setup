@@ -346,10 +346,16 @@
             mode: "0744"
             force: yes
 
+        # This can be removed after a few versions!
+        - name: Remove previous /etc/cron.d/ahadns-cron file
+          file:
+            path: /etc/cron.d/ahadns-cron
+            state: absent
+
         - name: Setup custom cron-jobs
           copy:
-            src: cron.d/ahadns-cron
-            dest: /etc/cron.d/ahadns-cron
+            src: cron.d/ahadns
+            dest: /etc/cron.d/ahadns
             mode: "0644"
             force: yes
 
