@@ -103,6 +103,10 @@
         dest: /etc/sysctl.d/99-ahadns-sysctl.conf
         force: yes
         mode: "0644"
+    - name: Fix windows CR/LF line endings in /etc/sysctl.d/99-ahadns-sysctl.conf
+      replace:
+        path: /etc/sysctl.d/99-ahadns-sysctl.conf
+        regexp: "\r"
     - name: Reload sysctl
       shell: sysctl -p /etc/sysctl.d/99-ahadns-sysctl.conf
       become: true
@@ -120,6 +124,10 @@
             dest: /etc/apt/apt.conf.d/20auto-upgrades
             force: yes
             mode: "0644"
+        - name: Fix windows CR/LF line endings in /etc/apt/apt.conf.d/20auto-upgrades
+          replace:
+            path: /etc/apt/apt.conf.d/20auto-upgrades
+            regexp: "\r"
         - name: Set automatic reboot to true
           lineinfile:
             path: /etc/apt/apt.conf.d/50unattended-upgrades
@@ -359,6 +367,10 @@
             mode: "0644"
             force: yes
 
+    - name: Fix windows CR/LF line endings in /etc/cron.d/ahadns
+      replace:
+        path: /etc/cron.d/ahadns
+        regexp: "\r"
     - name: Fix windows CR/LF line endings in /etc/ahadns/unbound_update.sh
       replace:
         path: /etc/ahadns/unbound_update.sh
@@ -410,6 +422,10 @@
         dest: /etc/security/limits.d/99-ahadns-limits.conf
         mode: "0644"
         force: yes
+    - name: Fix windows CR/LF line endings in /etc/security/limits.d/99-ahadns-limits.conf
+      replace:
+        path: /etc/security/limits.d/99-ahadns-limits.conf
+        regexp: "\r"
     - name: Increase max open files in /etc/systemd/system.conf
       lineinfile:
         path: /etc/systemd/system.conf
