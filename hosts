@@ -63,8 +63,8 @@ golangVersion="1.15.5"
 
 # m13253 dns-over-https server version.
 # All releases can be seen at: https://github.com/m13253/dns-over-https/releases
-# Config provided here have only been tested for 2.2.2 & 2.2.3
-m13253DohServerVersion="2.2.3"
+# Provided config might not work with another version
+m13253DohServerVersion="2.2.4"
 
 # Dotnet runtime version to install
 # See more at: https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian
