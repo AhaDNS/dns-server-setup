@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.  
 Type of changes can be `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
+## [2.0.0] - 2020-12-12
+
+### Fixed
+
+- Fixed issue where certbot could not renew certificates due to permissions & nginx binding on port 80
+  - Requires complete re-install of certificates
+
+### Changed
+
+- Tuning of Unbound, increased number of file descriptors
+- Set static cache size for Unbound, might be changed to dynamic later when stability is confirmed
+- Made golang version upgradable by always re-installing golang on each deploy
+- Updated m13253 DoH server to 2.2.4
+
 ## [1.1.0] - 2020-12-06
 
 ### Fixed
