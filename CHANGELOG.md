@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.  
 Type of changes can be `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
+## [2.0.1] - 2020-12-23
+
+### Changed
+
+- Tuning of Unbound config
+- Upgraded to newest release of Aha.Dns.Statistics v1.0.0
+
 ## [2.0.0] - 2020-12-12
 
 ### Fixed

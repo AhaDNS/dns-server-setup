@@ -72,7 +72,7 @@ dotnetVersion="3.1"
 
 # AhaDNS server statistics API version.
 # All releases can be seen at: https://github.com/AhaDNS/Aha.Dns.Statistics/releases
-ahaDnsStatisticsApiVersion="0.1.0-alpha"
+ahaDnsStatisticsApiVersion="1.0.0"
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
 ############################################
