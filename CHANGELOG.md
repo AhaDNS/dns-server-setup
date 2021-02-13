@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.  
 Type of changes can be `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
-## [Unreleased]
+## [3.0.0] - 2021-02-13
 
 ### Added
 
