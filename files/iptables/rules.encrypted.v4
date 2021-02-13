@@ -1,0 +1,48 @@
+# AhaDNS ip6table rules
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+
+# Allow all lo input
+-A INPUT -s 127.0.0.0/8 ! -i lo -j REJECT --reject-with icmp-port-unreachable
+-A INPUT -i lo -j ACCEPT
+
+# Rate limit
+-A INPUT -i {wanInterface} -d {Ipv4Addr} -p tcp -m multiport --dports 80,443,853 -m hashlimit --hashlimit-above 100/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnstcp4 -j REJECT --reject-with icmp-port-unreachable
+
+# Open inputs
+-A INPUT -p tcp -m state --state NEW,ESTABLISHED -m tcp --dport {sshPort} -j ACCEPT
+-A INPUT -i {wanInterface} -d {Ipv4Addr} -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 80,443,853 -j ACCEPT
+-A INPUT -i {wanInterface} -d {Ipv4Addr} -p icmp --icmp-type echo-request -m state --state NEW,ESTABLISHED -j ACCEPT --match limit --limit 100/second
+-A INPUT -i {wanInterface} -d {Ipv4Addr} -p icmp --icmp-type echo-reply -m state --state NEW,ESTABLISHED -j ACCEPT --match limit --limit 100/second
+
+# Log rejected connections (Debugging)
+-A INPUT --match limit --limit 1/sec -j LOG --log-prefix "IPTables-Rejected: "
+
+# Allow input of Established connections
+-A INPUT -i {wanInterface} -p tcp -m state --state ESTABLISHED -j ACCEPT
+-A INPUT -i {wanInterface} -p udp -m state --state ESTABLISHED -j ACCEPT
+
+# Drop everything
+-A INPUT -j DROP
+
+# Limit output to certain ports
+-A OUTPUT -o {wanInterface} -p tcp -m state --state NEW,ESTABLISHED,RELATED -m multiport --dports 53,80,443,587 -j ACCEPT
+-A OUTPUT -o {wanInterface} -p udp -m state --state NEW,ESTABLISHED,RELATED -m multiport --dports 53 -j ACCEPT
+-A OUTPUT -o {wanInterface} -p icmp --icmp-type echo-reply -j ACCEPT --match limit --limit 60/second
+-A OUTPUT -o {wanInterface} -p icmp --icmp-type echo-request -j ACCEPT --match limit --limit 60/second
+
+# Allow output of Established connections
+-A OUTPUT -o {wanInterface} -p tcp -m state --state ESTABLISHED -j ACCEPT
+-A OUTPUT -o {wanInterface} -p udp -m state --state ESTABLISHED -j ACCEPT
+
+# Allow all local output
+-A OUTPUT -o lo -j ACCEPT
+
+# Drops
+-A OUTPUT -o {wanInterface} -j DROP
+-A OUTPUT -j DROP
+-A FORWARD -j DROP
+COMMIT
+# End
