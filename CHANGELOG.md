@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.  
 Type of changes can be `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
+## [Unreleased]
+
+### Fixed
+
+- Added installation of Curl
+
 ## [2.0.1] - 2020-12-23
 
 ### Changed
