@@ -2,6 +2,7 @@
 
 Ansible playbook to easily deploy new DNS servers.
 This playbook is used to deploy all AhaDNS DNS server nodes.
+This playbook also gives you the option to deploy a server that only answers to DNS queries over encrypted channels such as DNS-over-HTTPS and DNS-over-TLS.
 
 ## Intended usecase
 
@@ -21,6 +22,10 @@ This ansible playbook deploys a fully configured AhaDNS server instance (except 
 
 All configuration that will be applied can be found in the `files` directory.
 The playbook is primarily created for AhaDNS but the public is of course welcome to use it as well.
+
+## Encrypted DNS only?
+
+By editing the variable `only_encrypted_dns` in the `hosts` file you can select to deploy a fully configured DNS server that only allows encrypted DNS queries over DNS-over-TLS and DNS-over-HTTPS. Regular unencrypted queries over port 53 will be blocked. It's recommended to set this variable to `true` whenever possible.
 
 ## Disclaimer
 

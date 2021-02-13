@@ -12,7 +12,7 @@
     # Get number of CPU cores & total mb ram on machine
     num_cores: "{{ [ansible_processor_cores, ansible_processor_count, ansible_processor_vcpus] | max | int }}"
     total_ram_mb: "{{ ansible_memtotal_mb }}"
-
+    only_encrypted: "{{ only_encrypted_dns | bool }}"
     # Calculate unbound cache based on number of cores and total ram
     # The factor 2.0 can be tweaked and is currently under assesment!
     # unbound_rrset_cache_mb: "{{ ((total_ram_mb | int) / (2.0 * (num_cores | int))) | int }}"
@@ -22,6 +22,8 @@
   tasks:
     - debug:
         msg: "Identified machine with {{ num_cores }} cpu cores and {{ total_ram_mb }}mb RAM"
+    - debug:
+        msg: "Setup DNS server that only allow encrypted DNS queries: {{ only_encrypted }}"
     # - debug:
     #     msg: >
     #       Will set unbound rrset-cache-size to {{ unbound_rrset_cache_mb }}m
@@ -164,22 +166,43 @@
     #
     # IPTables setup
     #
-    - name: Setup IPTables
-      block:
+
+    # Allow public DNS
+    - name: "Setup IPTables for unencrypted DNS"
+      block :
         - name: Copy IPTables conf for IPv4
           copy:
             src: iptables/rules.v4
             dest: /etc/iptables/rules.v4
             force: yes
             mode: "0644"
-
         - name: Copy IPTables conf for IPv6
           copy:
             src: iptables/rules.v6
             dest: /etc/iptables/rules.v6
             force: yes
             mode: "0644"
+      when: not only_encrypted
 
+    # Only allow Encrypted DNS
+    - name: "Setup IPTables for Encrypted DNS only"
+      block :
+        - name: Copy IPTables conf for IPv4 (Encrypted DNS only)
+          copy:
+            src: iptables/rules.encrypted.v4
+            dest: /etc/iptables/rules.v4
+            force: yes
+            mode: "0644"
+        - name: Copy IPTables conf for IPv6 (Encrypted DNS only)
+          copy:
+            src: iptables/rules.encrypted.v6
+            dest: /etc/iptables/rules.v6
+            force: yes
+            mode: "0644"
+      when: only_encrypted
+
+    - name: Setup IPTables
+      block:
         - name: Fix windows CR/LF line endings in rules.v4
           replace:
             path: /etc/iptables/rules.v4
@@ -255,11 +278,45 @@
         force: yes
         mode: "0644"
 
-    - name: Make unbound listen to IPv6 {{ serverIpv6 }}
-      replace:
-        path: /etc/unbound/unbound.conf.d/ahadns.conf
-        regexp: "{Ipv6Addr}"
-        replace: "{{ serverIpv6 }}"
+    # --- Public DNS
+    - name: "Setup unbound to allow DNS queries from everyone"
+      block:
+        - name: Make unbound listen to IPv6 {{ serverIpv6 }}
+          replace:
+            path: /etc/unbound/unbound.conf.d/ahadns.conf
+            regexp: "{Ipv6Addr}"
+            replace: "{{ serverIpv6 }}"
+      when: not only_encrypted
+    # --- Local DNS only
+    - name: "Setup unbound to only allow queries from localhost"
+      block:
+        - name: Remove unbound listen directive for {{ serverIpv6 }}
+          lineinfile:
+              path: /etc/unbound/unbound.conf.d/ahadns.conf
+              regexp: "{Ipv6Addr}"
+              line: ""
+              state: present
+        - name: Change unbound access control 0.0.0.0/0 to 127.0.0.1/32
+          replace:
+            path: /etc/unbound/unbound.conf.d/ahadns.conf
+            regexp: "0.0.0.0/0"
+            replace: "127.0.0.1/32"
+        - name: Change unbound access control ::0/0 to ::1/128
+          replace:
+            path: /etc/unbound/unbound.conf.d/ahadns.conf
+            regexp: "::0/0"
+            replace: "::1/128"
+        - name: Make unbound listen to 127.0.0.1 only
+          replace:
+            path: /etc/unbound/unbound.conf.d/ahadns.conf
+            regexp: "0.0.0.0"
+            replace: "127.0.0.1"
+        - name: Make unbound listen to ::1 only
+          replace:
+            path: /etc/unbound/unbound.conf.d/ahadns.conf
+            regexp: "::0"
+            replace: "::1"
+      when: only_encrypted
 
     - name: Set unbound num_threads to {{ num_cores | int }}
       replace:

@@ -5,6 +5,10 @@ Type of changes can be `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Se
 
 ## [Unreleased]
 
+### Added
+
+- Added possibility to deploy DNS server that only answers encrypted DNS queries (DoT & DoH only)
+
 ### Fixed
 
 - Added installation of Curl

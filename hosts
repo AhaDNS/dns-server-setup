@@ -34,6 +34,11 @@ timezone="Europe/Stockholm"
 # and possibly to notify if automatic update fails
 email="my@email.com"
 
+# This variable determines if only encrypted
+# DNS lookups will be allowed (DoT & DoH).
+# If false, unencrypted DNS over port 53 will be allowed.
+only_encrypted_dns=false
+
 #
 # Ports
 #
@@ -72,7 +77,7 @@ dotnetVersion="3.1"
 
 # AhaDNS server statistics API version.
 # All releases can be seen at: https://github.com/AhaDNS/Aha.Dns.Statistics/releases
-ahaDnsStatisticsApiVersion="1.0.0"
+ahaDnsStatisticsApiVersion="1.0.1"
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
 ############################################
