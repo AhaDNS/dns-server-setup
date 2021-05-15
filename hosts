@@ -64,12 +64,12 @@ ahaDnsStatisticsApiKey="supersecret"
 
 # Golang version to install.
 # Available version can be seen at: https://galaxy.ansible.com/gantsign/golang
-golangVersion="1.15.5"
+golangVersion="1.16.4"
 
 # m13253 dns-over-https server version.
 # All releases can be seen at: https://github.com/m13253/dns-over-https/releases
 # Provided config might not work with another version
-m13253DohServerVersion="2.2.4"
+m13253DohServerVersion="2.2.5"
 
 # Dotnet runtime version to install
 # See more at: https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian
