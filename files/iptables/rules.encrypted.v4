@@ -9,7 +9,7 @@
 -A INPUT -i lo -j ACCEPT
 
 # Rate limit
--A INPUT -i {wanInterface} -d {Ipv4Addr} -p tcp -m multiport --dports 80,443,853 -m hashlimit --hashlimit-above 100/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnstcp4 -j REJECT --reject-with icmp-port-unreachable
+-A INPUT -i {wanInterface} -d {Ipv4Addr} -p tcp -m multiport --dports 80,443,853 -m hashlimit --hashlimit-above 100/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsipv4 -j REJECT --reject-with icmp-port-unreachable
 
 # Open inputs
 -A INPUT -p tcp -m state --state NEW,ESTABLISHED -m tcp --dport {sshPort} -j ACCEPT

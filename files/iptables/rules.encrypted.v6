@@ -8,7 +8,7 @@
 -A INPUT -i lo -j ACCEPT
 
 # Rate limit
--A INPUT -i {wanInterface} -d {Ipv6Addr} -p tcp -m multiport --dports 80,443,853 -m hashlimit --hashlimit-above 60/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsipv6 -j REJECT
+-A INPUT -i {wanInterface} -d {Ipv6Addr} -p tcp -m multiport --dports 80,443,853 -m hashlimit --hashlimit-above 40/sec --hashlimit-burst 20 --hashlimit-htable-expire 10000 --hashlimit-mode srcip --hashlimit-name dnsipv6 -j REJECT
 
 # Open inputs
 -A INPUT -i {wanInterface} -d {Ipv6Addr} -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 80,443,853 -j ACCEPT
