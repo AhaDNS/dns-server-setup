@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.  
 Type of changes can be `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
+## [3.0.1] - 2021-05-15
+
+### Changed
+
+- Changed IPTables ratelimit rules to be more restrictive on port 53 for both ipv4 and ipv6
+- Upgraded installed golang version from 1.15.5 to 1.16.4 (latest avilable as of now)
+- Upgraded m13253's DoH server from 2.2.4 to 2.2.5
+
 ## [3.0.0] - 2021-02-13
 
 ### Added
