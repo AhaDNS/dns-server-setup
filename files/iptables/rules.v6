@@ -42,7 +42,7 @@
 # Limit output to certain ports
 -A OUTPUT -o {wanInterface} -p tcp -m state --state NEW,ESTABLISHED,RELATED -m multiport --dports 53,80,443,587 -j ACCEPT
 -A OUTPUT -o {wanInterface} -p udp -m state --state NEW,ESTABLISHED,RELATED -m multiport --dports 53 -j ACCEPT
--A OUTPUT -o {wanInterface} -p icmpv6 -j ACCEPT --match limit --limit 100/second
+-A OUTPUT -o {wanInterface} -p icmpv6 -j ACCEPT --match limit --limit 60/second
 
 # Allow output of Established connections
 -A OUTPUT -o {wanInterface} -p tcp -m state --state ESTABLISHED -j ACCEPT
