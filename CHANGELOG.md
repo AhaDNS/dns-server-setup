@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.  
 Type of changes can be `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
+## [Unreleased]
+
+### Changed
+
+- Disabled TCP port 53 in firewall
+- Changed rate limiting to be more agressive for both port 53 and DoH/DoT
+- Disabled lookup of private ip ranges in unbound config
+- Changed apt upgrade interval from 1 to 14 days
+
 ## [3.0.1] - 2021-05-15
 
 ### Changed
